@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>Star Trek</title>
+		<style>
+			canvas {
+				background-image: url('images/background.png');
+				position: absolute;
+				left: 250px;
+				border: #909090 1px solid;
+				display: block;
+				margin: 0 auto;
+				width: 70%;
+				height: 600px;
+			}
+			body {
+				background-color: black;
+			}
+			h3 {
+				margin: 0px;
+				margin-bottom: 10px;
+				font-size: 2.7em;
+				text-align: center;
+			}
+			button {
+				position: absolute;
+				left: 550px;
+				top: 350px;
+				background-color: #f4511e;
+				border: none;
+				color: white;
+				padding: 16px 32px;
+				text-align: center;
+				font-size: 16px;
+				margin: 4px 2px;
+				opacity: 0.6;
+				transition: 0.3s;
+				display: inline-block;
+				text-decoration: none;
+				cursor: pointer;
+				width: 30%;
+			}
+			button:hover {
+				opacity: 1;
+			}
+		</style>
+	</head>
+	<body>
+		<h3 style="color: red;">Star Trek v0.1</h3>
+		<hr />
+		<div>
+			<canvas id="gameCanvas" width="750" height="480"></canvas>
+			<button id="start_button" , onclick="surprise()">START</button>
+		</div>
+
+		<script>
+			var canvas = document.getElementById('gameCanvas');
+			var ctx = canvas.getContext('2d');
+
+			function surprise() {
+				const button = document.getElementById('start_button');
+				button.remove();
+
+				//비행기에 대한 정보
+				var shipImg = new Image();
+				shipImg.src = 'images/ship.png';
+				var shipSize = 40;
+				var speed = 10;
+				var keyDown = {};
+				//	const image = document.getElementById('images/bomb.png');
+
+				function Ship() {
+					this.x = (canvas.width - shipSize) / 2;
+					this.y = canvas.height - shipSize;
+					this.w = shipSize;
+					this.h = shipSize;
+					this.missiles = [];
+
+					this.render = function () {
+						ctx.strokeStyle = 'red';
+						ctx.strokeRect(this.x, this.y, this.w, this.h);
+						ctx.drawImage(shipImg, this.x, this.y);
+
+						for (var i = 0; i < this.missiles.length; i++) {
+							var m = this.missiles[i];
+
+							ctx.fillStyle = m.bg;
+							ctx.fillRect(m.x, (m.y -= 5), m.w, m.h);
+
+							// 미사일과 적기의 충돌 체크*********************88
+							checkCollision(m, i);
+
+							//만약 미사일과 적기가 충돌하였다면 쾅하는 사운드 && 폭발사진 && 총알 그 뒤로는 안나가기
+							/*if (checkCollision) {
+							var img = new Image(); //이미지 객체 생성
+							img.src = 'bomb.png'; //code.jpg라는 이미지 파일을 로딩 시작
+
+							ctx.drawImage(img, 100,100,100,100);
+							
+
+							//devjhs.tistory.com/577 [키보드와 하루]
+							//(20,20)을 중심으로 100*100의 사이즈로 이미지를 그림 context. drawImage (img,20,20,100,100)
+						}*/
+							//만약 적기와 비행기가 충돌하였다면 비행기 이미지 깜빡거리기
+
+							if (m.y <= 0) {
+								this.missiles.splice(i, 1);
+							}
+						}
+					};
+				}
+
+				var ship = new Ship();
+
+				// 비행기 좌우 움직인 구현
+				var rightPressed = false;
+				var leftPressed = false;
+				var upPressed = false;
+
+				document.addEventListener('keydown', keyDownHandler, false);
+				document.addEventListener('keyup', keyUpHandler, false);
+
+				function keyDownHandler(e) {
+					if (e.code == 'ArrowRight') {
+						rightPressed = true;
+					} else if (e.code == 'ArrowLeft') {
+						leftPressed = true;
+					}
+					if (e.code == 'ArrowUp') {
+						upPressed = true;
+					}
+				}
+				function keyUpHandler(e) {
+					if (e.code == 'ArrowRight') {
+						rightPressed = false;
+					} else if (e.code == 'ArrowLeft') {
+						leftPressed = false;
+					}
+					if (e.code == 'ArrowUp') {
+						upPressed = false;
+					}
+				}
+
+				//적기 구현
+				var enemySize = 40;
+				var enemyImg = new Image();
+				enemyImg.src = 'images/enemy.png';
+
+				var enemyCount = 10;
+				var enemyStatus = [];
+
+				for (var i = 0; i < enemyCount; i++) {
+					enemyStatus[i] = {
+						x: 0,
+						y: 0,
+						w: enemySize,
+						h: enemySize,
+						img: enemyImg,
+						status: 0,
+					};
+				}
+				function checkCrash() {
+					for (var i = 0; i < enemyCount; i++) {
+						var enemy = enemyStatus[i];
+
+						if (enemy.status == 0) {
+							continue;
+						}
+
+						ship.rx = ship.x + ship.w;
+						ship.by = ship.y + ship.h;
+						enemy.rx = enemy.x + enemy.w;
+						enemy.by = enemy.y + enemy.h;
+
+						if (
+							(ship.x >= enemy.x && ship.x <= enemy.rx) ||
+							(ship.rx >= enemy.x && ship.rx <= enemy.rx)
+						) {
+							if (
+								(ship.y >= enemy.y && ship.y <= enemy.by) ||
+								(ship.by >= enemy.y && ship.by <= enemy.by)
+							) {
+								return 1;
+							}
+						}
+					}
+					return 0;
+				}
+				function createNewEnemy(probWeight, gameLevel) {
+					if (Math.floor(Math.random() * probWeight) < gameLevel) {
+						for (var i = 0; i < enemyCount; i++) {
+							var enemy = enemyStatus[i];
+
+							if (enemy.status == 0) {
+								enemy.y = 0;
+								enemy.x = Math.floor(Math.random() * canvas.width);
+
+								if (enemy.x + enemySize > canvas.width) {
+									enemy.x = canvas.width - enemySize;
+								}
+								enemy.status = 1;
+								break;
+							}
+						}
+					}
+				}
+				var enemySpeed = 4; //만약 점수 어느정도 이상오르면 적기 속도 높히기;
+				function drawAllEnemies() {
+					for (var i = 0; i < enemyCount; i++) {
+						var enemy = enemyStatus[i];
+
+						if (enemy.status == 0) {
+							continue;
+						}
+						enemy.y += enemySpeed;
+
+						if (enemy.y + enemySize <= canvas.height) {
+							ctx.strokeStyle = 'red';
+							ctx.strokeRect(enemy.x, enemy.y, enemy.w, enemy.h);
+
+							ctx.drawImage(enemy.img, enemy.x, enemy.y, enemy.w, enemy.h);
+						} else {
+							enemy.status = 0;
+						}
+					}
+					createNewEnemy(30, 1);
+				}
+
+				// 미사일과 적기 충돌
+				var missiles = [];
+				function checkCollision(m, mi) {
+					for (var i = 0; i < enemyCount; i++) {
+						var enemy = enemyStatus[i];
+
+						if (enemy.status == 0) {
+							continue;
+						}
+
+						enemy.rx = enemy.x + enemy.w;
+						enemy.by = enemy.y + enemy.h;
+
+						if (
+							m.x >= enemy.x &&
+							m.x <= enemy.rx &&
+							m.y >= enemy.y &&
+							m.y <= enemy.by
+						) {
+							/*
+						var img = new Image();
+						img.onload = function () {
+							ctx.drawImage(img, m.x, (m.y -= 5), 40, 40);
+						};*/
+							// 마시일과 적기 충돌하고 나면 미사일 그 뒤로는 안나가기
+							//	img.src = 'bomb.png';
+							missiles.splice(missiles[mi], 1);
+							enemy.status = 0;
+						}
+					}
+				}
+
+				function animate() {
+					ctx.clearRect(0, 0, canvas.width, canvas.height);
+					drawAllEnemies();
+					ship.render();
+
+					if (rightPressed && ship.x < canvas.width - shipSize) {
+						ship.x += speed;
+					} else if (leftPressed && ship.x > 0) {
+						ship.x -= speed;
+					}
+					if (upPressed) {
+						ship.missiles.push({
+							x: ship.x + ship.w * 0.5,
+							y: ship.y - 5,
+							w: 3,
+							h: 10,
+							bg: 'red',
+						});
+					}
+					if (checkCrash()) {
+						ctx.font = '20pt Calibri';
+						ctx.fillStyle = 'red';
+						ctx.fillText('Crash!!', 10, 20);
+					}
+				}
+				setInterval(animate, 30);
+			}
+		</script>
+	</body>
+</html>
